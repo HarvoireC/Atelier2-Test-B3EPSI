@@ -10,7 +10,7 @@ import shutil
         et suppression.
 
         Deux rectifications : il faudrait passer le code et l'interface en anglais
-        et sortir la sélection de la classe "métier"
+        et sortir la sélection de la classe "métier" 
 """
 
 

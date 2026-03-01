@@ -14,6 +14,19 @@ import shutil
 """
 
 
+class UserInterface:
+    def __init__(self):
+        self._error_choice = 0
+
+    @property
+    def error_choice(self):
+        return self._error_choice
+
+    @error_choice.setter
+    def error_choice(self, value):
+        self._error_choice = value
+
+
 class FileSelector:
     def __init__(self):
         self.selected_files = []
@@ -65,9 +78,10 @@ class FileSelector:
 
 
 class FileManager:
-    def __init__(self):
+    def __init__(self, ui=None):
         self.current_path = os.path.expanduser('~')
         self.file_selector = FileSelector()
+        self.ui = ui if ui else UserInterface()
 
     def display_directory_contents(self):
         """Display contents of the current directory"""
@@ -112,6 +126,7 @@ class FileManager:
                 print("No files selected")
                 return
 
+            always_ignore = False
             for file_path in selected_files:
                 if os.path.isfile(file_path):
                     if os.path.isdir(destination):
@@ -122,9 +137,21 @@ class FileManager:
                         if parent_dir and not os.path.exists(parent_dir):
                             os.makedirs(parent_dir)
                     
-                    shutil.copy2(file_path, dest_path)
+                    try:
+                        shutil.copy2(file_path, dest_path)
+                    except Exception as e:
+                        if not always_ignore:
+                            print(f"Copy error for {file_path}: {e}")
+                            choice = self.ui.error_choice
+                            if choice == 0:  # Ignore once
+                                continue
+                            elif choice == 1:  # Always ignore
+                                always_ignore = True
+                                continue
+                            elif choice == 2:  # Stop
+                                return
             
-            print(f"{len(selected_files)} file(s) copied")
+            print(f"{len(selected_files)} file(s) processed")
             self.file_selector.clear_selection()
         except Exception as e:
             print(f"Copy error: {e}")
@@ -137,6 +164,7 @@ class FileManager:
                 print("No files selected")
                 return
 
+            always_ignore = False
             for file_path in selected_files:
                 if os.path.isfile(file_path):
                     if os.path.isdir(destination):
@@ -147,9 +175,21 @@ class FileManager:
                         if parent_dir and not os.path.exists(parent_dir):
                             os.makedirs(parent_dir)
                     
-                    shutil.move(file_path, dest_path)
+                    try:
+                        shutil.move(file_path, dest_path)
+                    except Exception as e:
+                        if not always_ignore:
+                            print(f"Move error for {file_path}: {e}")
+                            choice = self.ui.error_choice
+                            if choice == 0:  # Ignore once
+                                continue
+                            elif choice == 1:  # Always ignore
+                                always_ignore = True
+                                continue
+                            elif choice == 2:  # Stop
+                                return
             
-            print(f"{len(selected_files)} file(s) moved")
+            print(f"{len(selected_files)} file(s) processed")
             self.file_selector.clear_selection()
         except Exception as e:
             print(f"Move error: {e}")
@@ -163,18 +203,33 @@ class FileManager:
                 return
 
             files_to_delete = list(selected_files)
+            always_ignore = False
             for file_path in files_to_delete:
                 if os.path.isfile(file_path):
-                    os.remove(file_path)
+                    try:
+                        os.remove(file_path)
+                    except Exception as e:
+                        if not always_ignore:
+                            print(f"Delete error for {file_path}: {e}")
+                            choice = self.ui.error_choice
+                            if choice == 0:  # Ignore once
+                                continue
+                            elif choice == 1:  # Always ignore
+                                always_ignore = True
+                                continue
+                            elif choice == 2:  # Stop
+                                return
             
-            print(f"{len(files_to_delete)} file(s) deleted")
+            print(f"{len(files_to_delete)} file(s) processed")
             self.file_selector.clear_selection()
         except Exception as e:
             print(f"Delete error: {e}")
 
 
 def main_menu():
-    file_manager = FileManager()
+    # In a real application, we would use an interactive UI
+    ui = MockUI()
+    file_manager = FileManager(ui=ui)
 
     while True:
         print("\n--- File Explorer ---")
@@ -226,5 +281,25 @@ def main_menu():
         except Exception as e:
             print(f"An error occurred: {e}")
 
+
+class MockUI(UserInterface):
+    """Simple UI for demonstration or test that prompts for error choice"""
+    @property
+    def error_choice(self):
+        while True:
+            try:
+                print("\nAn error occurred during the operation.")
+                print("0. Ignore and continue")
+                print("1. Always ignore")
+                print("2. Stop operation")
+                choice = int(input("Your choice: "))
+                if 0 <= choice <= 2:
+                    return choice
+            except ValueError:
+                pass
+            print("Invalid choice. Please enter 0, 1, or 2.")
+
+
 if __name__ == "__main__":
+    # In a real app, we might pass a more interactive UI
     main_menu()
